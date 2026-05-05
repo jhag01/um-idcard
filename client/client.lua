@@ -8,6 +8,18 @@ function nuiFocus(bool)
     openID = bool
 end
 
+local function getCardProp(cardtype)
+    if not cardtype then return warn('No Card Type') end
+
+    local license = config.licenses[cardtype]
+    if not license then return warn('Invalid Card Type: ' .. tostring(cardtype)) end
+
+    local prop = license.prop
+    if not prop then return warn('Card Type: ' .. cardtype .. ' No Prop') end
+
+    return prop
+end
+
 local function startAnim(prop)
     lib.requestModel(prop)
     local playerCoords = GetEntityCoords(cache.ped)
@@ -30,16 +42,18 @@ end
 -- Events
 RegisterNetEvent('um-idcard:client:sendData', function(metadata)
     if GetInvokingResource() then return end
-
     if openID then return end
-    if not metadata.cardtype then return warn('No Card Type') end
+    if not getCardProp(metadata.cardtype) then return end
 
-    local license = config.licenses[metadata.cardtype]
-    if not license then return warn('Invalid Card Type: ' .. tostring(metadata.cardtype)) end
-    local prop = license.prop
-    if not prop then return warn('Card Type: ' .. metadata.cardtype .. ' No Prop') end
-
-    startAnim(prop)
     nuiFocus(true)
     SendNUIMessage({ type = 'playerData', playerData = metadata })
+end)
+
+RegisterNetEvent('um-idcard:client:animStart', function(metadata)
+    if GetInvokingResource() then return end
+
+    local prop = getCardProp(metadata.cardtype)
+    if not prop then return end
+
+    startAnim(prop)
 end)

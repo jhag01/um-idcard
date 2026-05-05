@@ -38,5 +38,6 @@ function SendIDCardData(src, item)
         })
     end
 
+    TriggerClientEvent('um-idcard:client:animStart', src, metadata)
     TriggerClientEvent('um-idcard:client:sendData', closestPlayer or src, metadata)
 end
