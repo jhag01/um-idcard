@@ -1,18 +1,11 @@
 local config = require('config')
-local saveBase64AsPng = config.mugshotsUpload == 'local' and require('server.upload.local') or nil
-local resourcePath = 'https://cfx-nui-' .. GetCurrentResourceName() .. '/web/assets/mugshots'
 
+local providerName = config.mugshotsUpload:lower()
+local success, uploadProvider = pcall(require, ('server.upload.%s'):format(providerName))
 
----@param url string
----@return boolean
-local function IsAllowedMugshotUrl(url)
-    if type(url) ~= 'string' or url == '' or not url:find('^https://') then return false end
-    local allowed = { 'https://r2.fivemanage.com', 'https://fivemanage.com' }
-    for i = 1, #allowed do
-        local origin = allowed[i]
-        if origin and #url >= #origin and url:sub(1, #origin) == origin then return true end
-    end
-    return false
+if not success or not uploadProvider then
+    warn(('Failed to load upload provider: %s'):format(providerName))
+    uploadProvider = nil
 end
 
 ---@param src integer
@@ -20,22 +13,12 @@ end
 ---@param itemName string
 ---@return string|nil mugShotUrl
 local function resolveMugShot(src, identifier, itemName)
+    if not uploadProvider then return nil end
+
     local result = lib.callback.await('um-idcard:client:callBack:getMugShot', src)
     if not result then return nil end
 
-    if config.mugshotsUpload == 'fivemanage' and result.url then
-        if not IsAllowedMugshotUrl(result.url) then return nil end
-        return result.url
-    end
-
-    if config.mugshotsUpload == 'local' and result.base64 and saveBase64AsPng then
-        local imageName = ('%s_%s'):format(identifier, itemName)
-        if saveBase64AsPng(result.base64, imageName) then
-            return ('%s/%s.png'):format(resourcePath, imageName)
-        end
-    end
-
-    return nil
+    return uploadProvider(result, identifier, itemName)
 end
 
 function UpdateMugShot(src, item)

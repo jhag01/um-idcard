@@ -35,21 +35,28 @@ local function validateAndDecode(base64String)
     return decoded
 end
 
-local function saveBase64AsPng(base64String, imageName)
-    local decodedData = validateAndDecode(base64String)
-    if not decodedData then return false end
+---@param result table
+---@param identifier string
+---@param itemName string
+---@return string | nil
+local function saveBase64AsPng(result, identifier, itemName)
+    if not result.base64 then return nil end
 
+    local decodedData = validateAndDecode(result.base64)
+    if not decodedData then return nil end
+
+    local imageName = ('%s_%s'):format(identifier, itemName)
     imageName = imageName:gsub('[/\\%.%:%*%?%"%<%>%|]', '_')
 
     local updatedPath = resourcePath:match("resources/.*")
-    if not updatedPath then return false end
+    if not updatedPath then return nil end
     local file = io.open(('%s/%s/%s.png'):format(updatedPath, imagePath, imageName), "wb")
     if file then
         file:write(decodedData)
         file:close()
-        return true
+        return ('https://cfx-nui-%s/%s/%s.png'):format(cache.resource, imagePath, imageName)
     end
-    return false
+    return nil
 end
 
 return saveBase64AsPng
