@@ -30,7 +30,21 @@ local function GetPresignedUrl()
     return presignedUrl
 end
 
+---@param result table
+---@return string | nil
+local function IsAllowedMugshotUrl(result)
+    local url = result.url
+    if not url or type(url) ~= 'string' or url == '' or not url:find('^https://') then return nil end
+    local allowed = { 'https://r2.fivemanage.com', 'https://fivemanage.com' }
+    for i = 1, #allowed do
+        local origin = allowed[i]
+        if origin and #url >= #origin and url:sub(1, #origin) == origin then return url end
+    end
+    return nil
+end
 
 lib.callback.register('um-idcard:server:getPresignedUrl', function(source)
     return GetPresignedUrl()
 end)
+
+return IsAllowedMugshotUrl
